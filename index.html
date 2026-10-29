@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-HK">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>香港貸款利息計算機</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei","Noto Sans TC",sans-serif;background:#f2f4f7;color:#1c2733;line-height:1.55}
+  .wrap{max-width:680px;margin:0 auto;padding:16px 14px 40px}
+  h1{font-size:24px;margin:6px 0 4px}
+  .sub{color:#5b6b7c;margin:0 0 16px;font-size:14px}
+  .card{background:#fff;border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+  label{display:block;font-size:14px;font-weight:700;margin:14px 0 6px}
+  label:first-child{margin-top:0}
+  .hint{font-size:13px;color:#5b6b7c;font-weight:400;margin-top:4px}
+  input,select{width:100%;font-size:17px;padding:12px;border:1.5px solid #cbd5df;border-radius:10px;background:#fff}
+  input:focus{outline:2px solid #2563eb;outline-offset:1px}
+  .row{display:flex;gap:10px}
+  .row>div{flex:1}
+  .modes{display:flex;gap:8px;margin-bottom:4px}
+  .mode{flex:1;border:2px solid #cbd5df;background:#fff;border-radius:12px;padding:12px 8px;font-size:16px;font-weight:700;cursor:pointer;text-align:center}
+  .mode[aria-pressed="true"]{border-color:#2563eb;background:#e8efff;color:#1d4ed8}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .chip{border:1px solid #cbd5df;background:#f8fafc;border-radius:999px;padding:8px 12px;font-size:14px;cursor:pointer}
+  .chip:active{background:#e8efff}
+  .calc{width:100%;margin-top:18px;background:#2563eb;color:#fff;border:0;border-radius:12px;padding:14px;font-size:18px;font-weight:700;cursor:pointer}
+  .calc:active{background:#1d4ed8}
+  .results{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+  .stat{background:#f8fafc;border-radius:12px;padding:12px}
+  .stat .k{font-size:13px;color:#5b6b7c}
+  .stat .v{font-size:20px;font-weight:800;margin-top:2px}
+  .stat .v small{font-size:13px;font-weight:400;color:#5b6b7c}
+  .stat.big{grid-column:1/-1;background:#e8efff}
+  .explain{background:#fff7e6;border-radius:10px;padding:12px;font-size:14px;margin-top:12px}
+  .error{display:none;background:#fdecec;color:#9b1c1c;border-radius:10px;padding:12px;font-size:14px;margin-top:12px}
+  .actions{display:flex;gap:10px;margin-top:14px}
+  .actions button{flex:1;padding:11px;border-radius:10px;border:1.5px solid #cbd5df;background:#fff;font-size:15px;font-weight:700;cursor:pointer}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin-top:10px}
+  th,td{padding:8px 6px;border-bottom:1px solid #e5eaf0;text-align:right;white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  .tablewrap{overflow-x:auto}
+  details{margin-top:14px}
+  summary{font-weight:700;cursor:pointer;font-size:16px;padding:6px 0}
+  .note{font-size:13px;color:#5b6b7c}
+  .disclaimer{font-size:13px;color:#5b6b7c;background:#fff;border-radius:14px;padding:16px}
+  .disclaimer strong{color:#1c2733}
+  @media print{.calc,.actions,.chips,.modes{display:none}body{background:#fff}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>香港貸款利息計算機</h1>
+  <p class="sub">最常用嘅計法：知道客人借幾多、每月還幾多、還幾耐，反推月平息同實際年利率。亦可以由利率正向計每月還款。所有計算只喺你部手機入面做，唔會上傳。</p>
+
+  <div class="card">
+    <div class="modes" role="group" aria-label="計算方式">
+      <button type="button" class="mode" id="modeReverse" aria-pressed="true">我知每月還款</button>
+      <button type="button" class="mode" id="modeFlat" aria-pressed="false">我知月平息</button>
+      <button type="button" class="mode" id="modeAnnual" aria-pressed="false">我知年利率</button>
+    </div>
+    <p class="hint" id="modeHint">每月還款：入貸款額、每月還款額同期數，反推月平息同實際年利率。</p>
+
+    <label for="amount">貸款金額（港元）
+      <input id="amount" type="number" inputmode="decimal" min="1" step="1" value="100000">
+    </label>
+
+
+    <div class="row">
+      <div>
+        <label for="months">還款期數（月）
+          <input id="months" type="number" inputmode="numeric" min="1" max="120" step="1" value="24">
+        </label>
+      </div>
+      <div id="rateWrap">
+        <label for="rate"><span id="rateLabel">月平息（% 每月）</span>
+          <input id="rate" type="number" inputmode="decimal" min="0" step="0.01" value="0.25">
+        </label>
+      </div>
+    </div>
+    <label for="monthlyPayment" id="monthlyWrap">每月還款額（港元）
+      <input id="monthlyPayment" type="number" inputmode="decimal" min="1" step="0.01" value="4416.67">
+      <span class="hint">客人每個月實際要還幾多。</span>
+    </label>
+    <div class="chips" aria-label="常用期數">
+      <button type="button" class="chip" data-months="1">1 個月</button>
+      <button type="button" class="chip" data-months="3">3 個月</button>
+      <button type="button" class="chip" data-months="6">6 個月</button>
+      <button type="button" class="chip" data-months="12">12 個月</button>
+      <button type="button" class="chip" data-months="24">24 個月</button>
+      <button type="button" class="chip" data-months="36">36 個月</button>
+      <button type="button" class="chip" data-months="48">48 個月</button>
+      <button type="button" class="chip" data-months="60">60 個月</button>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="fee">手續費（港元，可填 0）
+          <input id="fee" type="number" inputmode="decimal" min="0" step="1" value="0">
+          <span class="hint">手續費會計入總成本，實際年利率會按「實收金額」估算。</span>
+        </label>
+      </div>
+      <div>
+        <label for="startDate">首次還款日期
+          <input id="startDate" type="date">
+        </label>
+      </div>
+    </div>
+
+    <button type="button" class="calc" id="calcBtn">計算</button>
+    <div class="error" id="error"></div>
+  </div>
+
+  <div class="card" id="resultCard" hidden>
+    <div class="results">
+      <div class="stat big"><div class="k">每月還款額</div><div class="v" id="rMonthly">—</div></div>
+      <div class="stat"><div class="k">總利息</div><div class="v" id="rInterest">—</div></div>
+      <div class="stat"><div class="k">總還款額（本金＋利息）</div><div class="v" id="rTotal">—</div></div>
+      <div class="stat"><div class="k">實際年利率（估算）</div><div class="v" id="rApr">—</div></div>
+      <div class="stat"><div class="k">名義年利率（每月利率 × 12）</div><div class="v" id="rNominal">—</div></div>
+      <div class="stat"><div class="k" id="rEquivLabel">月平息</div><div class="v" id="rEquiv">—</div></div>
+      <div class="stat"><div class="k">總成本（利息＋手續費）</div><div class="v" id="rCost">—</div></div>
+      <div class="stat"><div class="k">利息佔總還款</div><div class="v" id="rShare">—</div></div>
+    </div>
+    <div class="explain" id="explain"></div>
+    <div class="actions">
+      <button type="button" id="copyBtn">複製結果</button>
+      <button type="button" id="printBtn">列印／存 PDF</button>
+    </div>
+    <details open>
+      <summary>還款表（逐期睇本金、利息同剩餘本金）</summary>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>期數</th><th>還款日期</th><th>還款額</th><th>本金</th><th>利息</th><th>剩餘本金</th></tr></thead>
+          <tbody id="scheduleBody"></tbody>
+        </table>
+      </div>
+      <p class="note">尾期金額已按仙位調整，令還款表總本金啱啱等於貸款額、剩餘本金歸零。</p>
+    </details>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:17px;margin:0 0 8px">月平息同年利率有咩分別？</h2>
+    <p style="margin:0 0 8px"><strong>月平息：</strong>利息按「原本貸款額」計，借幾多、還咗幾多都唔影響每月利息。月平息數字睇落細，但實際年利率會高好多。</p>
+    <p style="margin:0 0 8px"><strong>年利率（餘額遞減）：</strong>利息按「剩餘本金」計，每還一期，本金少咗，下期利息就少啲。呢個模式下每月還款額一樣，但入面本金部分會愈嚟愈多、利息部分愈嚟愈少。</p>
+    <p style="margin:0">比較兩間貸款，最緊要睇<strong>實際年利率</strong>同總成本，唔好只睇月平息個數字。</p>
+  </div>
+
+  <div class="disclaimer">
+    <strong>只供參考，唔係貸款建議。</strong>實際條款、手續費、還款安排同實際年利率嘅定義，各間貸款機構可能唔同，一切以貸款合約為準。「我知每月還款」模式假設每月還款額固定、每月還一次；呢個程式嘅年利率模式，係將年利率除以 12 當每月利率；月平息換算出嚟嘅實際年利率，係用內部回報率方法估算嘅有效年利率，未計逾期費用同其他收費。借錢之前，要肯定自己還得到先好借。
+  </div>
+</div>
+
+<script>
+"use strict";
+var mode = "reverse";
+var $ = function(id){ return document.getElementById(id); };
+
+function round2(x){ return Math.round((x + Number.EPSILON) * 100) / 100; }
+function money(x){
+  return "HK$" + Number(x).toLocaleString("zh-HK", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+function pct(x, digits){
+  if (digits === undefined) digits = 2;
+  return Number(x).toFixed(digits) + "%";
+}
+function parseNum(el){
+  var v = parseFloat(el.value);
+  return isFinite(v) ? v : NaN;
+}
+
+function setMode(next){
+  mode = next;
+  $("modeReverse").setAttribute("aria-pressed", next === "reverse" ? "true" : "false");
+  $("modeFlat").setAttribute("aria-pressed", next === "flat" ? "true" : "false");
+  $("modeAnnual").setAttribute("aria-pressed", next === "annual" ? "true" : "false");
+  $("rateWrap").style.display = next === "reverse" ? "none" : "";
+  $("monthlyWrap").style.display = next === "reverse" ? "" : "none";
+  if (next === "reverse"){
+    $("modeHint").textContent = "每月還款：入貸款額、每月還款額同期數，反推月平息同實際年利率。";
+    $("rEquivLabel").textContent = "月平息";
+  } else if (next === "flat"){
+    $("rateLabel").textContent = "月平息（% 每月）";
+    $("rate").value = "0.25";
+    $("rate").step = "0.01";
+    $("modeHint").textContent = "月平息：利息按原本貸款額計，每個月利息一樣。香港私人貸款廣告成日用呢個講法。";
+    $("rEquivLabel").textContent = "輸入嘅月平息";
+  } else {
+    $("rateLabel").textContent = "年利率（% 每年）";
+    $("rate").value = "8";
+    $("rate").step = "0.1";
+    $("modeHint").textContent = "年利率：利息按剩餘本金計（餘額遞減），每月還款額一樣，但每月利息會愈嚟愈少。";
+    $("rEquivLabel").textContent = "相等月平息（同一期數）";
+  }
+  calculate();
+}
+
+// 內部回報率：搵每月利率 r，令實收金額 = 每月還款嘅現值。用二分法。
+function monthlyIrr(payments, netProceeds){
+  if (!payments.length || netProceeds <= 0) return null;
+  function npv(r){
+    var s = -netProceeds;
+    for (var i = 0; i < payments.length; i++){
+      s += payments[i] / Math.pow(1 + r, i + 1);
+    }
+    return s;
+  }
+  var lo = -0.9, hi = 1.0;
+  // 利率為 0 時現值若已大過實收金額，代表利率係負數，程式只處理 0 或以上嘅一般情況。
+  if (npv(0) <= 0) return 0;
+  while (npv(hi) > 0 && hi < 8) hi *= 2;
+  for (var k = 0; k < 200; k++){
+    var mid = (lo + hi) / 2;
+    if (npv(mid) > 0) lo = mid; else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+
+function buildScheduleFlat(P, flatMonthly, n, monthlyRounded, startDate){
+  var rows = [], balance = P, totalInterest = 0;
+  var interestEach = round2(P * flatMonthly);
+  for (var i = 1; i <= n; i++){
+    var interest, principal, payment;
+    if (i < n){
+      interest = interestEach;
+      principal = round2(monthlyRounded - interest);
+      payment = monthlyRounded;
+    } else {
+      principal = round2(balance);
+      interest = round2(monthlyRounded - principal);
+      // 尾期利息唔可以係負數，亦唔可以偏離恆定利息太多：用剩餘本金加恆定利息結清。
+      if (interest < 0 || Math.abs(interest - interestEach) > 0.05){
+        interest = interestEach;
+        payment = round2(principal + interest);
+      } else {
+        payment = round2(principal + interest);
+      }
+    }
+    balance = round2(balance - principal);
+    totalInterest = round2(totalInterest + interest);
+    rows.push({i:i, date:addMonths(startDate, i-1), payment:payment, principal:principal, interest:interest, balance:Math.max(0, balance)});
+  }
+  return {rows:rows, totalInterest:totalInterest};
+}
+
+function buildScheduleAmort(P, monthlyRate, n, monthlyRounded, startDate){
+  var rows = [], balance = P, totalInterest = 0;
+  for (var i = 1; i <= n; i++){
+    var interest = round2(balance * monthlyRate);
+    var principal, payment;
+    if (i < n){
+      principal = round2(monthlyRounded - interest);
+      payment = monthlyRounded;
+    } else {
+      principal = round2(balance);
+      payment = round2(principal + interest);
+    }
+    balance = round2(balance - principal);
+    totalInterest = round2(totalInterest + interest);
+    rows.push({i:i, date:addMonths(startDate, i-1), payment:payment, principal:principal, interest:interest, balance:Math.max(0, balance)});
+  }
+  return {rows:rows, totalInterest:totalInterest};
+}
+
+function addMonths(date, months){
+  var d = new Date(date.getFullYear(), date.getMonth() + months, 1);
+  return d.getFullYear() + "年" + (d.getMonth() + 1) + "月";
+}
+
+function calculate(){
+  var err = $("error");
+  err.style.display = "none";
+  err.textContent = "";
+  var P = parseNum($("amount"));
+  var n = parseNum($("months"));
+  var rate = parseNum($("rate"));
+  var monthlyGiven = parseNum($("monthlyPayment"));
+  var fee = parseNum($("fee"));
+  if (isNaN(fee)) fee = 0;
+  if (!isFinite(P) || P <= 0){ showError("請輸入大過 0 嘅貸款金額。"); return; }
+  if (!isFinite(n) || n < 1 || n > 120 || Math.floor(n) !== n){ showError("還款期數請輸入 1 至 120 嘅整數（月）。"); return; }
+  if (mode !== "reverse" && (!isFinite(rate) || rate < 0)){ showError("請輸入 0 或以上嘅利率。"); return; }
+  if (mode === "reverse"){
+    if (!isFinite(monthlyGiven) || monthlyGiven <= 0){ showError("請輸入大過 0 嘅每月還款額。"); return; }
+    if (round2(monthlyGiven * n) < P){ showError("每月還款額 × 期數要最少等於貸款金額，否則連本金都還唔到。請檢查每月還款額。"); return; }
+  }
+  if (fee < 0 || fee >= P){ showError("手續費要細過貸款金額。"); return; }
+
+  var startValue = $("startDate").value;
+  var startDate = startValue ? new Date(startValue + "T00:00:00") : new Date();
+  if (isNaN(startDate.getTime())) startDate = new Date();
+
+  var result;
+  if (mode === "reverse"){
+    var monthlyRev = round2(monthlyGiven);
+    var paymentsRev = [];
+    for (var j = 0; j < n; j++) paymentsRev.push(monthlyRev);
+    // 還款表用「借到嘅本金」反推嘅利率計，先會啱啱還清；手續費只影響下面實際年利率嘅估算，唔影響還款表同總利息。
+    var irrRev = monthlyIrr(paymentsRev, P);
+    if (irrRev === null) irrRev = 0;
+    var schedR = buildScheduleAmort(P, irrRev, n, monthlyRev, startDate);
+    var flatRev = (schedR.totalInterest / (P * n)) * 100;
+    result = {
+      monthly: monthlyRev, totalInterest: schedR.totalInterest,
+      total: round2(P + schedR.totalInterest), rows: schedR.rows,
+      payments: schedR.rows.map(function(r){ return r.payment; }),
+      flatPct: flatRev,
+      explain: "每月還 " + money(monthlyRev) + " × " + n + " 個月，總還款 " + money(round2(P + schedR.totalInterest)) + "，總利息 " + money(schedR.totalInterest) + "。月平息 " + pct(flatRev) + "，即係按原本貸款額計，每月平息利息 " + money(P * flatRev / 100) + "。還款表用反推返嚟嘅每月利率計，利息會隨剩餘本金減少。"
+    };
+    $("rEquiv").textContent = pct(flatRev) + " / 月";
+  } else if (mode === "flat"){
+    var flatMonthly = rate / 100;
+    var totalInterestFlat = round2(P * flatMonthly * n);
+    var monthlyFlat = round2((P + totalInterestFlat) / n);
+    var sched = buildScheduleFlat(P, flatMonthly, n, monthlyFlat, startDate);
+    result = {
+      monthly: monthlyFlat, totalInterest: sched.totalInterest,
+      total: round2(P + sched.totalInterest), rows: sched.rows,
+      payments: sched.rows.map(function(r){ return r.payment; }),
+      explain: "月平息 " + pct(rate) + " × " + n + " 個月：每月利息固定係 " + money(P * flatMonthly) + "，利息按原本貸款額 " + money(P) + " 計，唔會因為還咗本金而減少。"
+    };
+    $("rEquiv").textContent = pct(rate) + " / 月";
+  } else {
+    var monthlyRate = (rate / 100) / 12;
+    var monthlyAnnual;
+    if (monthlyRate === 0) monthlyAnnual = round2(P / n);
+    else monthlyAnnual = round2(P * monthlyRate * Math.pow(1 + monthlyRate, n) / (Math.pow(1 + monthlyRate, n) - 1));
+    var schedA = buildScheduleAmort(P, monthlyRate, n, monthlyAnnual, startDate);
+    var equivFlat = (schedA.totalInterest / (P * n)) * 100;
+    result = {
+      monthly: monthlyAnnual, totalInterest: schedA.totalInterest,
+      total: round2(P + schedA.totalInterest), rows: schedA.rows,
+      payments: schedA.rows.map(function(r){ return r.payment; }),
+      explain: "年利率 " + pct(rate) + "，每月利率係年利率 ÷ 12。首期利息係 " + money(schedA.rows[0].interest) + "，之後按剩餘本金計，會逐期減少。同一筆貸款同一個期數，相等月平息係 " + pct(equivFlat) + "。"
+    };
+    $("rEquiv").textContent = pct(equivFlat) + " / 月";
+  }
+
+  var irr = monthlyIrr(result.payments, P - fee);
+  var apr = irr === null ? null : (Math.pow(1 + irr, 12) - 1) * 100;
+
+  $("rMonthly").textContent = money(result.monthly);
+  $("rInterest").textContent = money(result.totalInterest);
+  $("rTotal").textContent = money(result.total);
+  $("rApr").textContent = apr === null ? "—" : pct(apr);
+  $("rNominal").textContent = irr === null ? "—" : pct(irr * 12 * 100);
+  $("rCost").textContent = money(round2(result.totalInterest + fee));
+  $("rShare").textContent = result.total > 0 ? pct((result.totalInterest / result.total) * 100, 1) : "—";
+  $("explain").textContent = result.explain + (fee > 0 ? " 手續費 " + money(fee) + " 已計入總成本，實際年利率按實收 " + money(P - fee) + " 估算。" : " 未計手續費。");
+  if (apr !== null) $("explain").textContent += " 實際年利率（估算）" + pct(apr) + " 係有效年利率，已經反映利息隨還款減少嘅效果。";
+
+  var tbody = $("scheduleBody");
+  tbody.innerHTML = "";
+  result.rows.forEach(function(r){
+    var tr = document.createElement("tr");
+    [r.i, r.date, money(r.payment), money(r.principal), money(r.interest), money(r.balance)].forEach(function(v, idx){
+      var td = document.createElement("td");
+      td.textContent = v;
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+
+  $("resultCard").hidden = false;
+  window.__lastResult = {
+    mode: mode, P:P, n:n, rate:rate, fee:fee,
+    monthly: result.monthly, totalInterest: result.totalInterest,
+    total: result.total, apr: apr
+  };
+}
+
+function showError(msg){
+  var err = $("error");
+  err.textContent = msg;
+  err.style.display = "block";
+  $("resultCard").hidden = true;
+}
+
+$("modeReverse").addEventListener("click", function(){ setMode("reverse"); });
+$("modeFlat").addEventListener("click", function(){ setMode("flat"); });
+$("modeAnnual").addEventListener("click", function(){ setMode("annual"); });
+$("calcBtn").addEventListener("click", calculate);
+["amount","months","rate","fee","monthlyPayment"].forEach(function(id){
+  $(id).addEventListener("input", calculate);
+});
+$("startDate").addEventListener("change", calculate);
+document.querySelectorAll("[data-months]").forEach(function(b){
+  b.addEventListener("click", function(){ $("months").value = b.getAttribute("data-months"); calculate(); });
+});
+document.querySelectorAll("[data-preset]").forEach(function(b){
+  b.addEventListener("click", function(){
+    var parts = b.getAttribute("data-preset").split(",");
+    $("amount").value = parts[0];
+    $("months").value = parts[1];
+    calculate();
+  });
+});
+$("copyBtn").addEventListener("click", function(){
+  var r = window.__lastResult;
+  if (!r) return;
+  var modeText = r.mode === "reverse" ? "每月還款" : (r.mode === "flat" ? "月平息" : "年利率");
+  var text = "香港貸款利息計算結果（只供參考）\n貸款金額：" + money(r.P) + "\n期數：" + r.n + " 個月\n"
+    + (r.mode === "reverse" ? "每月還款：" + money(r.monthly) + "\n" : modeText + "：" + pct(r.rate) + (r.mode === "flat" ? " / 月" : " / 年") + "\n")
+    + "每月還款：" + money(r.monthly) + "\n總利息：" + money(r.totalInterest) + "\n總還款：" + money(r.total)
+    + "\n實際年利率（估算）：" + (r.apr === null ? "—" : pct(r.apr)) + "\n手續費：" + money(r.fee);
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){ $("copyBtn").textContent = "已複製"; setTimeout(function(){ $("copyBtn").textContent = "複製結果"; }, 1500); });
+  }
+});
+$("printBtn").addEventListener("click", function(){ window.print(); });
+
+(function init(){
+  var today = new Date();
+  var iso = today.getFullYear() + "-" + String(today.getMonth()+1).padStart(2,"0") + "-" + String(today.getDate()).padStart(2,"0");
+  $("startDate").value = iso;
+  calculate();
+})();
+</script>
+</body>
+</html>
